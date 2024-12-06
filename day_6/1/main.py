@@ -10,11 +10,19 @@ GUARD_RIGHT = '>'
 GUARD_LEFT = '<'
 GUARD_DOWN = 'v'
 
-GUARD_DIRECTION = [
+GUARD_DIRECTIONS = [
     GUARD_UP,
     GUARD_RIGHT,
     GUARD_LEFT,
     GUARD_DOWN
+]
+
+GUARD_POSITIONS = [
+    GUARD_UP,
+    GUARD_RIGHT,
+    GUARD_LEFT,
+    GUARD_DOWN,
+    PAST_STEP
 ]
 
 def turn(direction):
@@ -33,7 +41,7 @@ def get_current(map):
     direction = None
     for y, row in enumerate(map):
         for x, col in enumerate(row):
-            if col in GUARD_DIRECTION:
+            if col in GUARD_DIRECTIONS:
                 pos_x = x
                 pos_y = y
                 direction = col
@@ -82,11 +90,10 @@ def get_next(pos_x, pos_y, direction, map):
     raise Exception('how?')
 
 def get_positions_count(start_x, start_y, start_direction, map):
-    map[start_y] = map[start_y][:start_x] + PAST_STEP + map[start_y][start_x + 1:]
     counter = 1
     next_x, next_y, direction = get_next(start_x, start_y, start_direction, map)
     while next_x is not None:
-        if map[next_y][next_x] != PAST_STEP:
+        if map[next_y][next_x] not in GUARD_POSITIONS:
             counter += 1
             map[next_y] = map[next_y][:next_x] + PAST_STEP + map[next_y][next_x + 1:]
         next_x, next_y, direction = get_next(next_x, next_y, direction, map)
