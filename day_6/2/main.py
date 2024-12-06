@@ -41,8 +41,6 @@ STEP = {
     GUARD_LEFT:  (-1,  0),
 }
 
-MAX_ITERATIONS = 10000
-
 def replace(map, pos, c):
     map[pos[1]] = map[pos[1]][:pos[0]] + c + map[pos[1]][pos[0] + 1:]
 
@@ -69,19 +67,21 @@ def get_current(map):
     return (pos_x, pos_y), direction
 
 def get_next(pos, direction, map, obstacle=(-1, -1)):
-    x, y = pos
-    dx, dy = STEP[direction]
-    next_x, next_y = sum(pos, STEP[direction])
-    
-    if next_y >= len(map) or next_y == -1 \
-        or next_x >= len(map[0]) or next_x == -1:
+    while True:
+        x, y = pos
+        dx, dy = STEP[direction]
+        next_x, next_y = sum(pos, STEP[direction])
         
-        return pos, (dx, dy), None, direction 
-    
-    if map[next_y][next_x] == OBSTACLE or (next_x, next_y) == obstacle:
-        return get_next(pos, TURN[direction], map)
+        if next_y >= len(map) or next_y == -1 \
+            or next_x >= len(map[0]) or next_x == -1:
+            
+            return pos, (dx, dy), None, direction 
         
-    return (x, y), (dx, dy), (next_x, next_y), direction
+        if map[next_y][next_x] == OBSTACLE or (next_x, next_y) == obstacle:
+            direction = TURN[direction]
+            continue
+        
+        return (x, y), (dx, dy), (next_x, next_y), direction
 
 def get_moves(start, start_direction, map):
     positions = set()
@@ -94,41 +94,38 @@ def get_moves(start, start_direction, map):
     return positions
 
 def is_loopy(start, start_direction, map, obstacle=(-1, -1)):
-    moves = list()
+    moves_s = set()
+    moves_l = list()
     pos, step, next, direction = get_next(start, start_direction, map, obstacle=obstacle)
-    iterations = 0
     while next is not None:
         # print_state(False, moves, map)
         # sleep(1)
-        if ((pos, step)) in moves:
-            return True, moves
-        moves.append((pos, step))
+        if (pos, step) in moves_s:
+            return True, moves_l
+        moves_s.add((pos, step))
+        moves_l.append((pos, step))
         pos, step, next, direction = get_next(next, direction, map, obstacle=obstacle)
     
-    return False, moves
+    return False, moves_l
 
-def get_loopy_maps(start, start_direction, moves, map):
-    maps = list()
-    for pos in moves:
+def get_loopy_obstacles(start, start_direction, moves, map):
+    obstacles = list()
+    for i, pos in enumerate(moves):
         if pos == start:
             continue
-        loopy, loop_moves = is_loopy(start, start_direction, map, obstacle=pos)
+        loopy, _ = is_loopy(start, start_direction, map, obstacle=pos)
         if loopy:
-            entry = {
-                'obstacle': pos,
-                'loopy': loopy,
-                'moves': loop_moves
-            }
-            maps.append(entry)
+            obstacles.append(pos)
     
-    return maps
+    return obstacles
 
-def draw_path(moves: set, src_map, obstacle=(-1, -1)):
+def draw_path(moves, src_map, obstacle=(-1, -1)):
     last_step = (0, 0)
     map = [row for row in src_map]
     if obstacle != (-1, -1):
         replace(map, obstacle, NEW_OBSTACLE)
-    for pos, step in list(moves):
+
+    for pos, step in moves:
         x, y = pos
         dx, dy = step
         if map[y + dy][x + dx] in GUARD_DIRECTIONS:
@@ -171,11 +168,13 @@ def main():
     
     moves = get_moves(start, start_direction, map)
     
-    maps = get_loopy_maps(start, start_direction, moves, map)
+    obstacles = get_loopy_obstacles(start, start_direction, moves, map)
     
-    print(f'Got total of {len(maps)} loopy maps')
-    # for entry in maps:
-    #     print_state(entry['loopy'], entry['moves'], map, entry['obstacle'])
+    print(f'Got total of {len(obstacles)} loopy maps')
+    # for obstacle in obstacles:
+    #     loopy, moves = is_loopy(start, start_direction, map, obstacle=obstacle)
+    #     print_state(loopy, moves, map, obstacle=obstacle)
+    #     return
     
 if __name__ == '__main__':
     main()
